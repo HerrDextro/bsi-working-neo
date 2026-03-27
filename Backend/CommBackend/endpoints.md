@@ -41,3 +41,13 @@
 #### GET /user/{id}
 *gets single user with id*
 
+## Teams
+#### POST /teams
+
+
+#### GET /teams *?active_only=true/false*
+*gets all teams*
+
+#### GET /teams/{id}
+*gets single teams*
+

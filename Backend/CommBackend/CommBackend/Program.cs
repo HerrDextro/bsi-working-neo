@@ -117,5 +117,6 @@ app.UseAuthorization();
 
 app.MapUserEndpoints();
 app.MapCallEndpoints();
+app.MapTeamsEndpoints();
 
 app.Run();

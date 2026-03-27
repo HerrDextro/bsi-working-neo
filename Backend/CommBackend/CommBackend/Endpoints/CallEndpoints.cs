@@ -1,9 +1,12 @@
 ﻿using CommBackend.Models.Context;
 using CommBackend.Models.Data;
+using CommBackend.Models.Presentation.Auth;
 using CommBackend.Models.Presentation.Room;
 using CommBackend.Services.TokenGenerator;
 using Livekit.Server.Sdk.Dotnet;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace CommBackend.Endpoints
 {
@@ -27,7 +30,7 @@ namespace CommBackend.Endpoints
                     .ToList();
 
                 return Results.Ok(displayResponse);
-            });
+            }).RequireAuthorization();
 
             app.MapPost("/rooms/create", async (RoomServiceClient client, CommContext db, string roomName) =>
             {
@@ -53,14 +56,26 @@ namespace CommBackend.Endpoints
                 await db.SaveChangesAsync();
 
                 return Results.Ok(new RoomResponse(dbRoom, maxParticipants));
-            });
+            }).RequireAuthorization();
 
-            app.MapPost("/rooms/join", async (string roomId, IConfiguration config) =>
+            app.MapPost("/rooms/join", async (string roomId, IConfiguration config, ITokenGenerator tokenGenerator, ClaimsPrincipal user, CommContext db) =>
             {
+                ClaimData claims = await tokenGenerator.GetClaims(user); //ported from controller api, fix!
+                
                 var apiKey = config["LiveKit:ApiKey"];
                 var apiSecret = config["LiveKit:ApiSecret"];
-                string identity = "abc"; //fetch from jwt later
+                string identity = claims.Uuid;
 
+                // add user to db
+                RoomCall? call = db.RoomCalls.FirstOrDefault(c => c.Id == roomId);
+                if (call == null) { return Results.NotFound(); }
+
+                User? currentUser = db.Users.FirstOrDefault(u => u.Id == roomId);
+                if (currentUser == null) { return Results.NotFound(); }
+
+                call.Members.Add(currentUser);
+
+                // return auth for user to join call
                 if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiSecret))
                     return Results.Problem("LiveKit credentials not configured.");
 
@@ -69,7 +84,7 @@ namespace CommBackend.Endpoints
                     .WithGrants(new VideoGrants { RoomJoin = true, Room = roomId });
 
                 return Results.Ok(new { token = token.ToJwt() });
-            });
+            }).RequireAuthorization();
 
             app.MapPost("/rooms/leave", async (RoomServiceClient client, CommContext db, string roomId, string identity) =>
             {
@@ -98,7 +113,7 @@ namespace CommBackend.Endpoints
                 {
                     return Results.BadRequest(new { message = "Error leaving room", error = ex.Message });
                 }
-            });
+            }).RequireAuthorization();
 
             app.MapDelete("/rooms/{roomId}", async (RoomServiceClient client, string roomId, CommContext db) =>
             {
@@ -119,7 +134,7 @@ namespace CommBackend.Endpoints
                 {
                     return Results.NotFound(new { message = $"Could not delete room: {roomId}", error = ex.Message });
                 }
-            });
+            }).RequireAuthorization();
 
             app.MapPatch("/rooms/{roomId}/title", async (RoomServiceClient client, string roomId, string newTitle) =>
             {
@@ -139,7 +154,7 @@ namespace CommBackend.Endpoints
                 {
                     return Results.Problem($"Failed to update room: {ex.Message}");
                 }
-            });
+            }).RequireAuthorization();
         }
     }
 }
