@@ -43,7 +43,15 @@
 
 ## Teams
 #### POST /teams
-
+```json
+{
+  "name": "string",
+  "description": "string",
+  "teamsMeetingUrl": "string",
+  "startTime": "2026-03-27T22:35:28.875Z",
+  "endTime": "2026-03-27T22:35:28.875Z"
+}
+```
 
 #### GET /teams *?active_only=true/false*
 *gets all teams*

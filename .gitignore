@@ -1,6 +1,7 @@
 # Standard .NET Ignore
 [Bb]in/
-[Ob]j/
+[Oo]bj/
+
 out/
 .vs/
 .vscode/
