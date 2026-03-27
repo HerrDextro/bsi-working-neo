@@ -1,13 +1,27 @@
 let calls = [
-    "Topic1",
-    "Topic2",
-    "Topic3",
-    "Topic4",
-    "Topic5"
+    {
+        id: 1748875, 
+        topic: "Topic1",
+        participants: 5,
+        activity: 1
+    },
+    {
+        id: 2478784, 
+        topic: "Topic2",
+        participants: 10,
+        activity: 1
+    },
+    {
+        id: 38589348, 
+        topic: "Topic3",
+        participants: 2,
+        activity: 1
+    }
 ]
 
-const circleRadius = 50; 
 let placedCircles = [];
+const createClusterBtn = document.getElementById("createCluster");
+const submitClusterName = document.getElementById("submitNameBtn");
 
 function createCallList(list){
     const parent = document.getElementById("callArea");
@@ -17,55 +31,125 @@ function createCallList(list){
         const div = document.createElement("div");
         
         div.className = "element";
-        div.textContent = element;
+        div.textContent = element.topic;
 
         parent.appendChild(div);
     })
 }
 
-function createCluster(list){
+function createAllCluster(list) {
     const parent = document.getElementById("clusterArea");
-    parent.style.position = "relative";
     parent.innerHTML = "";
-
-    placedCircles = [];
+    placedCircles = []; 
 
     list.forEach(element => {
-        const div = document.createElement("div");
-        div.className = "cluster";
-
-        let position = findSafePosition(parent);
-        
-        if (position) {
-            div.style.left = `${position.x}px`;
-            div.style.top = `${position.y}px`;
-            parent.appendChild(div);
-            placedCircles.push(position);
-        }
+        createCluster(element, parent);
     });
 }
 
-function findSafePosition(parent) {
+function getCenterFromGuid(element, parent) {
     const pRect = parent.getBoundingClientRect();
-    let maxAttempts = 100;
 
-    while (maxAttempts > 0) {
-        let x = Math.random() * (pRect.width - circleRadius * 2);
-        let y = Math.random() * (pRect.height - circleRadius * 2);
-
-        let overlapping = placedCircles.some(other => {
-            let dx = x - other.x;
-            let dy = y - other.y;
-            let distance = Math.sqrt(dx * dx + dy * dy);
-            return distance < (circleRadius * 2 + 10);
-        });
-
-        if (!overlapping) {
-            return { x, y };
-        }
-        maxAttempts--;
-    }
-    return null;
+    const seed = hashStringToInt(element.id ? element.id.toString() : element.topic);
+    
+    const margin = 80;
+    
+    const x = (seed % (pRect.width - margin * 2)) + margin;
+    const y = ((seed >> 5) % (pRect.height - margin * 2)) + margin;
+    
+    return { x, y };
 }
-createCallList(calls);
-createCluster(calls);
+
+createClusterBtn.addEventListener("click", () => {
+    const overlay = document.querySelector(".overlay");
+    overlay.style.display = "flex";
+})
+
+submitClusterName.addEventListener("click", () => {
+    const name = document.getElementById("nameInput").value;
+    const parent = document.getElementById("clusterArea");
+
+    element = {
+        id: 8989898,
+        topic: name,
+        participants: 1,
+        activity: 1
+    }
+
+    createCluster(element, parent);
+
+    const overlay = document.querySelector(".overlay");
+    overlay.style.display = "none";
+})
+
+function createCluster(element, parent) {
+const template = document.getElementById("clusterTemplate");
+    if (!template) return;
+
+    const center = getCenterFromGuid(element, parent);
+    
+    let circleRadius = element.participants * 5 + 20; 
+
+    const clone = template.content.cloneNode(true);
+    const wrapper = clone.querySelector('.cluster-wrapper');
+    const circle = clone.querySelector('.cluster');
+    const title = clone.querySelector('.clusterTitle');
+
+    title.textContent = element.topic;
+    circle.textContent = element.participants;
+    
+    circle.style.height = (circleRadius * 2) + "px";
+    circle.style.width = (circleRadius * 2) + "px";
+    
+    wrapper.style.position = "absolute";
+
+    wrapper.style.left = `${center.x - circleRadius}px`;
+    wrapper.style.top = `${center.y - circleRadius}px`;
+    
+    parent.appendChild(clone);
+
+    placedCircles.push({ 
+        x: center.x, 
+        y: center.y, 
+        r: circleRadius,
+        id: element.id
+    });
+
+    circle.addEventListener("click", () => {
+        
+    })
+
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    createCallList(calls);
+    createAllCluster(calls);
+});
+
+function updateParticipantCount(id, newCount) {
+    const parent = document.getElementById("clusterArea");
+
+    const wrapper = document.querySelector(`.cluster-wrapper[data-id="${id}"]`);
+    if (!wrapper) return;
+
+    const circle = wrapper.querySelector('.cluster');
+    const newRadius = newCount * 5 + 20;
+
+    const center = getCenterFromGuid({ id: id }, parent);
+
+    circle.textContent = newCount;
+    circle.style.width = `${newRadius * 2}px`;
+    circle.style.height = `${newRadius * 2}px`;
+
+    wrapper.style.left = `${center.x - newRadius}px`;
+    wrapper.style.top = `${center.y - newRadius}px`;
+}
+
+
+function hashStringToInt(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash);
+}
