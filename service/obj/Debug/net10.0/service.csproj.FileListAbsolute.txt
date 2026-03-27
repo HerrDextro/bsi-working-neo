@@ -33,3 +33,10 @@ C:\Users\Neo\source\repos\service\service\obj\Debug\net10.0\refint\service.dll
 C:\Users\Neo\source\repos\service\service\obj\Debug\net10.0\service.pdb
 C:\Users\Neo\source\repos\service\service\obj\Debug\net10.0\service.genruntimeconfig.cache
 C:\Users\Neo\source\repos\service\service\obj\Debug\net10.0\ref\service.dll
+C:\Users\Neo\source\repos\service\service\bin\Debug\net10.0\Google.Protobuf.dll
+C:\Users\Neo\source\repos\service\service\bin\Debug\net10.0\LiveKit.AspNetCore.ServerSdk.dll
+C:\Users\Neo\source\repos\service\service\bin\Debug\net10.0\LiveKit.AspNetCore.ServerSdk.Abstractions.dll
+C:\Users\Neo\source\repos\service\service\bin\Debug\net10.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\Neo\source\repos\service\service\bin\Debug\net10.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\Neo\source\repos\service\service\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\Neo\source\repos\service\service\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
