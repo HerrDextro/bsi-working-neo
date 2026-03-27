@@ -103,7 +103,25 @@ namespace CommBackend.Endpoints
                 }
             });
 
+            app.MapGet("/auth", async Task<Results<Ok<List<DisplayUser>>, BadRequest<string>>> (CommContext db) =>
+            {
+                var users = await db.Users
+                    .Include(u => u.TeamsCall)
+                    .Include(u => u.RoomCall)
+                    .ToListAsync();
 
+                var displayUsers = users.Select(user => new DisplayUser(user)).ToList(); //use linq!!
+
+                return TypedResults.Ok(displayUsers);
+            });
+
+            app.MapGet("/auth/{uuid}", async Task<Results<Ok<DisplayUser>, NotFound<string>>> (CommContext db, string uuid) =>
+            {
+                User? user = await db.Users.FirstOrDefaultAsync(u => u.Id == uuid);
+                if (user == null) { return TypedResults.NotFound("User not found"); }
+
+                return TypedResults.Ok(new DisplayUser(user));
+            }).RequireAuthorization();
         }
     }
 }
