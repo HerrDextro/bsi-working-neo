@@ -22,6 +22,8 @@ let calls = [
 let placedCircles = [];
 const createClusterBtn = document.getElementById("createCluster");
 const submitClusterName = document.getElementById("submitNameBtn");
+const callInfosBackBtn = document.querySelector(".backBtn");
+const joinCallBtn = document.querySelector(".joinCallBtn");
 
 function createCallList(list){
     const parent = document.getElementById("callArea");
@@ -92,6 +94,7 @@ const template = document.getElementById("clusterTemplate");
 
     const clone = template.content.cloneNode(true);
     const wrapper = clone.querySelector('.cluster-wrapper');
+    wrapper.setAttribute('data-id', element.id);
     const circle = clone.querySelector('.cluster');
     const title = clone.querySelector('.clusterTitle');
 
@@ -100,6 +103,9 @@ const template = document.getElementById("clusterTemplate");
     
     circle.style.height = (circleRadius * 2) + "px";
     circle.style.width = (circleRadius * 2) + "px";
+
+    circle.setAttribute('data-id', element.id);
+    circle.setAttribute('data-topic', element.topic);
     
     wrapper.style.position = "absolute";
 
@@ -115,8 +121,13 @@ const template = document.getElementById("clusterTemplate");
         id: element.id
     });
 
-    circle.addEventListener("click", () => {
-        
+    circle.addEventListener("click", (e) => {
+        const clickedCircle = e.currentTarget;
+        const overlay = document.getElementById("callInfosOverlay");
+        overlay.style.display = "flex";
+
+        document.getElementById("callInfosTitle").textContent = clickedCircle.dataset.topic;
+        joinCallBtn.setAttribute('data-id', clickedCircle.dataset.id);
     })
 
 }
@@ -153,3 +164,22 @@ function hashStringToInt(str) {
     }
     return Math.abs(hash);
 }
+
+callInfosBackBtn.addEventListener("click", () => {
+    const overlay = document.getElementById("callInfosOverlay");
+    overlay.style.display = "none";
+})
+
+joinCallBtn.addEventListener("click", (e) => {
+    const id = Number(e.currentTarget.dataset.id);
+
+    const call = calls.find(element => element.id === id);
+
+    if(call){
+        call.participants += 1;
+        updateParticipantCount(id, call.participants);
+    }
+
+    const overlay = document.getElementById("callInfosOverlay");
+    overlay.style.display = "none";
+})
