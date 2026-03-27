@@ -1,5 +1,7 @@
 using CommBackend.Endpoints;
 using CommBackend.Models.Context;
+using CommBackend.Services.Hashing;
+using CommBackend.Services.TokenGenerator;
 using Livekit.Server.Sdk.Dotnet;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,12 +9,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 // DB Stuff
 var connectionString = builder.Configuration.GetConnectionString("DebugConnection");
-var serverVersion = ServerVersion.AutoDetect(connectionString);
+var serverVersion = new MySqlServerVersion(new Version(8, 0, 25));
 
 builder.Services.AddDbContext<CommContext>(options =>
 {
-    options.UseMySql(connectionString, serverVersion);
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        options.UseMySql(connectionString, serverVersion);
+    }
 });
+
+builder.Services.AddScoped<ITokenGenerator, JWTTokenGenerator>();
+builder.Services.AddScoped<IPasswordHash, BCryptHasher>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

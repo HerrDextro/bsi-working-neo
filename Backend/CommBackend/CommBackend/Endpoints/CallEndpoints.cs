@@ -1,5 +1,9 @@
-﻿using Livekit.Server.Sdk.Dotnet;
-using Microsoft.Extensions.Configuration;
+﻿using CommBackend.Models.Context;
+using CommBackend.Models.Data;
+using CommBackend.Models.Presentation.Room;
+using CommBackend.Services.TokenGenerator;
+using Livekit.Server.Sdk.Dotnet;
+using Microsoft.EntityFrameworkCore;
 
 namespace CommBackend.Endpoints
 {
@@ -7,75 +11,125 @@ namespace CommBackend.Endpoints
     {
         public static void MapCallEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapGet("/rooms", async (RoomServiceClient client) =>
+            app.MapGet("/rooms", async (RoomServiceClient client, CommContext db) =>
             {
                 var response = await client.ListRooms(new ListRoomsRequest());
-                return Results.Ok(response.Rooms);
+                var callRooms = response.Rooms;
+                var dbRooms = await db.RoomCalls.Include(r => r.Members).ToListAsync();
+
+                var displayResponse = dbRooms
+                    .Join(
+                        callRooms,
+                        dbRoom => dbRoom.Id,
+                        callRoom => callRoom.Name,
+                        (dbRoom, callRoom) => new RoomResponse(callRoom, dbRoom)
+                    )
+                    .ToList();
+
+                return Results.Ok(displayResponse);
             });
 
-            // 2. Create a new room
-            app.MapPost("/rooms/create", async (RoomServiceClient client, string roomName) =>
+            app.MapPost("/rooms/create", async (RoomServiceClient client, CommContext db, string roomName) =>
             {
-                string metadata = $"{{\"title\": \"{roomName}\"}}";
+                string guid = Guid.NewGuid().ToString();
+                uint maxParticipants = 20;
 
                 var request = new CreateRoomRequest
                 {
-                    Name = Guid.NewGuid().ToString(), // uses a guid and not name (because name is the pk of the calls)
-                    EmptyTimeout = 3600, // 60 minutes
-                    MaxParticipants = 20,
-                    Metadata = metadata
+                    Name = guid,
+                    EmptyTimeout = 3600,
+                    MaxParticipants = maxParticipants,
                 };
 
                 var room = await client.CreateRoom(request);
-                return Results.Ok(room);
+
+                var dbRoom = new RoomCall()
+                {
+                    Id = guid,
+                    Name = roomName,
+                };
+
+                db.RoomCalls.Add(dbRoom);
+                await db.SaveChangesAsync();
+
+                return Results.Ok(new RoomResponse(dbRoom, maxParticipants));
             });
 
-            // 3. Generate a Join Token (Crucial for users to connect)
-            app.MapPost("/rooms/join", (string roomName, IConfiguration config) =>
+            app.MapPost("/rooms/join", async (string roomId, IConfiguration config) =>
             {
                 var apiKey = config["LiveKit:ApiKey"];
                 var apiSecret = config["LiveKit:ApiSecret"];
-                string identity = "me"; //TODO replace with usr.uuid
+                string identity = "abc"; //fetch from jwt later
 
                 if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiSecret))
-                {
-                    return Results.Problem("LiveKit credentials are not configured.");
-                }
-
+                    return Results.Problem("LiveKit credentials not configured.");
 
                 var token = new AccessToken(apiKey, apiSecret)
                     .WithIdentity(identity)
-                    .WithGrants(new VideoGrants { RoomJoin = true, Room = roomName });
+                    .WithGrants(new VideoGrants { RoomJoin = true, Room = roomId });
 
                 return Results.Ok(new { token = token.ToJwt() });
             });
 
-            app.MapDelete("/rooms/{roomName}", async (RoomServiceClient client, string roomName) =>
+            app.MapPost("/rooms/leave", async (RoomServiceClient client, CommContext db, string roomId, string identity) =>
             {
                 try
                 {
-                    await client.DeleteRoom(new DeleteRoomRequest
+                    await client.RemoveParticipant(new RoomParticipantIdentity
                     {
-                        Room = roomName
+                        Room = roomId,
+                        Identity = identity
                     });
+
+                    var room = await db.RoomCalls.Include(r => r.Members)
+                                       .FirstOrDefaultAsync(r => r.Id == roomId);
+
+                    if (room != null)
+                    {
+                        var member = room.Members.FirstOrDefault(m => m.Id == identity);
+                        if (member != null) room.Members.Remove(member);
+
+                        await db.SaveChangesAsync();
+                    }
+
+                    return Results.Ok(new { message = "Successfully left the room" });
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest(new { message = "Error leaving room", error = ex.Message });
+                }
+            });
+
+            app.MapDelete("/rooms/{roomId}", async (RoomServiceClient client, string roomId, CommContext db) =>
+            {
+                try
+                {
+                    await client.DeleteRoom(new DeleteRoomRequest { Room = roomId });
+
+                    var roomCall = await db.RoomCalls.FindAsync(roomId);
+                    if (roomCall != null)
+                    {
+                        db.RoomCalls.Remove(roomCall);
+                        await db.SaveChangesAsync();
+                    }
 
                     return Results.NoContent();
                 }
                 catch (Exception ex)
                 {
-                    return Results.NotFound(new { message = $"Could not delete room: {roomName}", error = ex.Message });
+                    return Results.NotFound(new { message = $"Could not delete room: {roomId}", error = ex.Message });
                 }
             });
 
-            app.MapPatch("/rooms/{roomName}/title", async (RoomServiceClient client, string roomName, string newTitle) =>
+            app.MapPatch("/rooms/{roomId}/title", async (RoomServiceClient client, string roomId, string newTitle) =>
             {
                 try
                 {
-                    string metadataJson = $"{{\"title\": \"{newTitle}\"}}"; // wrapping metadata for frontend
+                    string metadataJson = $"{{\"title\": \"{newTitle}\"}}";
 
                     var updatedRoom = await client.UpdateRoomMetadata(new UpdateRoomMetadataRequest
                     {
-                        Room = roomName,
+                        Room = roomId,
                         Metadata = metadataJson
                     });
 
@@ -83,7 +137,7 @@ namespace CommBackend.Endpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Failed to delete room: {ex.Message}");
+                    return Results.Problem($"Failed to update room: {ex.Message}");
                 }
             });
         }

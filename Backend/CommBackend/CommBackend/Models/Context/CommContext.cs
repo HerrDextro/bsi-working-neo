@@ -14,10 +14,16 @@ namespace CommBackend.Models.Context
                 .HasMany(e => e.Users)
                 .WithOne(e => e.TeamsCall)
                 .HasForeignKey(e => e.TeamsId);
+
+            modelBuilder.Entity<RoomCall>()
+                .HasMany(e => e.Members)
+                .WithOne(e => e.RoomCall)
+                .HasForeignKey(e => e.RoomId);
         }
 
         public DbSet<User> Users { get; set; }
         public DbSet<TeamsCall> TeamsCalls { get; set; }
+        public DbSet<RoomCall> RoomCalls { get; set; }
 
     }
 }

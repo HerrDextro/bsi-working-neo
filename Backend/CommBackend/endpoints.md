@@ -16,3 +16,28 @@
 *updates room name*
 
 ## Auth
+#### POST /auth/login
+```json
+{
+    "username" : "username",
+    "password" : "password"
+}
+```
+
+#### POST /auth/register
+```json
+{
+    "username" : "username",
+    "password" : "password"
+}
+```
+
+#### POST /auth/refresh
+*refreshes user*
+
+#### GET /user
+*gets all users*
+
+#### GET /user/{id}
+*gets single user with id*
+
