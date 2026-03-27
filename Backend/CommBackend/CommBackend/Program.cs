@@ -3,9 +3,45 @@ using CommBackend.Models.Context;
 using CommBackend.Services.Hashing;
 using CommBackend.Services.TokenGenerator;
 using Livekit.Server.Sdk.Dotnet;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Music Backend", Version = "v1" });
+
+
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Description = "Bearer Authentication with JWT Token",
+        Type = SecuritySchemeType.Http
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Id = "Bearer",
+                    Type = ReferenceType.SecurityScheme
+                }
+            },
+            new List<string>()
+        }
+    });
+});
 
 // DB Stuff
 var connectionString = builder.Configuration.GetConnectionString("DebugConnection");
@@ -28,9 +64,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
-
-
-
 string host = "https://clustercalls-cmhrjljf.livekit.cloud";
 string? apiKey = builder.Configuration["LiveKit:ApiKey"];
 string? apiSecret = builder.Configuration["LiveKit:ApiSecret"];
@@ -41,6 +74,27 @@ if (apiKey == null || apiSecret == null)
 }
 
 builder.Services.AddSingleton(new RoomServiceClient(host, apiKey, apiSecret));
+
+//Authentication service
+builder.Services.AddAuthentication(options => //code copy pasted from some task we had half a year ago
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    var key = builder.Configuration.GetSection("JwtConfig:Key").Value;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero 
+    };
+});
 
 var app = builder.Build();
 
