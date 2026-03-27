@@ -12,7 +12,7 @@ builder.Services.AddSwaggerGen();
 
 string host = "https://clustercalls-cmhrjljf.livekit.cloud";
 string? apiKey = builder.Configuration["LiveKit:ApiKey"];
-string? apiSecret = builder.Configuration["LiveKit:ApiKey"];
+string? apiSecret = builder.Configuration["LiveKit:ApiSecret"];
 
 if (apiKey == null || apiSecret == null)
 {
