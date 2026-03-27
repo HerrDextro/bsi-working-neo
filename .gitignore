@@ -1,0 +1,18 @@
+# Standard .NET Ignore
+[Bb]in/
+[Ob]j/
+out/
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Secrets & Config
+appsettings.json
+appsettings.Development.json
+secrets.json
+
+# Docker
+.dockerignore
