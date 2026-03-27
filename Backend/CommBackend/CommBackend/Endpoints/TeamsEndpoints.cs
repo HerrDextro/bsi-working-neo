@@ -3,6 +3,7 @@ using CommBackend.Models.Data;
 using CommBackend.Models.Presentation.Auth;
 using CommBackend.Models.Presentation.Teams;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 
 namespace CommBackend.Endpoints
 {
@@ -17,7 +18,7 @@ namespace CommBackend.Endpoints
                 db.Add(teamsCall);
 
                 return Results.Ok(new TeamsResponse(teamsCall));
-            });
+            }).RequireAuthorization();
 
             app.MapGet("/teams", async (CommContext db, bool activeOnly) =>
             {
@@ -32,8 +33,16 @@ namespace CommBackend.Endpoints
 
                 List<TeamsResponse> Users = calls.Select(call => new TeamsResponse(call)).ToList();
 
-                return Users;
-            });
+                return Results.Ok(Users);
+            }).RequireAuthorization();
+
+            app.MapGet("/teams/{id}", async (CommContext db, string id) =>
+            {
+                TeamsCall? call = await db.TeamsCalls.FirstOrDefaultAsync(c => c.Id == id);
+                if (call == null) { return Results.NotFound(); }
+
+                return Results.Ok(new TeamsResponse(call));
+            }).RequireAuthorization();
         }
     }
 }

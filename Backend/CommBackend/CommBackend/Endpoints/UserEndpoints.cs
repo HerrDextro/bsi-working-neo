@@ -113,7 +113,7 @@ namespace CommBackend.Endpoints
                 var displayUsers = users.Select(user => new DisplayUser(user)).ToList(); //use linq!!
 
                 return TypedResults.Ok(displayUsers);
-            });
+            }).RequireAuthorization();
 
             app.MapGet("/auth/{uuid}", async Task<Results<Ok<DisplayUser>, NotFound<string>>> (CommContext db, string uuid) =>
             {
