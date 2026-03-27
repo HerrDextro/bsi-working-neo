@@ -1,4 +1,4 @@
-namespace CommBackend
+namespace service
 {
     public class WeatherForecast
     {
