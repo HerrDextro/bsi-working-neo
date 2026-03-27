@@ -13,7 +13,6 @@ builder.Services.AddOpenApi();
 
 //http service for calling groq
 builder.Services.AddHttpClient<TopicExtractorService>();
-builder.Services.AddSingleton<TopicExtractorService>();
 
 //livekit implementation?
 

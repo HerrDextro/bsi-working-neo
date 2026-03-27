@@ -7,4 +7,3 @@
         public string RawResponse { get; set; }
     }
 }
-
