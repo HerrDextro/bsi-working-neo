@@ -1,0 +1,151 @@
+body, html{
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background-color: pink;
+}
+
+header{
+    text-align: center;
+    margin: 0;
+    width: 100%;
+    height: 10%;
+    background-color: red;
+    color: green;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+#createCluster{
+    background-color: white;
+    height: 80%;
+    width: 5%;
+}
+
+main{
+    background-color: green;
+    height: 80%;
+}
+
+footer{
+    background-color: grey;
+    height: 10%;
+}
+
+
+#clusterArea{
+    background-color: blue;
+    height: 80%;
+    overflow: hidden;
+}
+#clusterCreation{
+    display: none;
+    z-index: 1000;
+}
+
+
+#callArea{
+    background-color: aqua;
+    height: 20%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.element{
+    background-color: black;
+    height: 40%;
+    padding: 10px;
+    color: white;
+    text-align: center;
+}
+
+
+
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    width: 300px;
+}
+
+.modal-content input {
+    width: 80%;
+    padding: 10px;
+    margin: 20px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.modal-content button {
+    padding: 10px 20px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Cluster */
+.cluster-wrapper{
+    background-color: violet;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 20px;
+}
+
+.clusterTitle{
+    color: green;
+    background-color: red;
+    height: 5%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.cluster{
+    width: 200px;
+    height: 200px;
+    background-color: orange;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
