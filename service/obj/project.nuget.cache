@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Soe69LzAQ7o=",
+  "dgSpecHash": "9XYxnjAAlnc=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Neo\\source\\repos\\service\\service\\service.csproj",
+  "projectFilePath": "C:\\Users\\Neo\\source\\repos\\HerrDextro\\bsi-working-neo\\service\\service.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Neo\\.nuget\\packages\\google.protobuf\\3.33.0\\google.protobuf.3.33.0.nupkg.sha512",
     "C:\\Users\\Neo\\.nuget\\packages\\livekit.aspnetcore.serversdk\\2.1.1\\livekit.aspnetcore.serversdk.2.1.1.nupkg.sha512",
