@@ -1,0 +1,72 @@
+services:
+  database:
+    image: mariadb:latest # TODO replace with version number
+    container_name: database
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_USER: ${DB_USER}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  backend:
+    build:
+      context: ./Backend/CommBackend/CommBackend
+      dockerfile: Dockerfile
+    container_name: conn_api
+    depends_on:
+      database:
+        condition: service_healthy  # Only starts when DB is ready
+    environment:
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+      - ASPNETCORE_ENVIRONMENT=Development # maybe switch to prod?
+    ports:
+      - "${BACKEND_PORT}:8080"
+    healthcheck:
+          test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+          interval: 10s
+          timeout: 5s
+          retries: 3
+    networks:
+      - backend
+
+
+  topic-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: conn_service
+    depends_on: 
+     - frontend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+     - "${SERVICE_PORT}:7197" #idk
+
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: conn_ui
+    depends_on:
+      backend:
+        condition: service_healthy # Only starts when API is ready
+    ports:
+      - "${FRONTEND_PORT}:80"
+
+volumes:
+  db_data:
+networks:
+  backend:

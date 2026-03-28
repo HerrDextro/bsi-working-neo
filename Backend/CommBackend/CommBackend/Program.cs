@@ -43,6 +43,27 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
+    options.AddPolicy("Any",
+            policy =>
+            {
+                policy.AllowAnyOrigin()
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
+                     
+                    
+            });
+});
+
 // DB Stuff
 var connectionString = builder.Configuration.GetConnectionString("DebugConnection");
 var serverVersion = new MySqlServerVersion(new Version(8, 0, 25));
@@ -75,6 +96,7 @@ if (apiKey == null || apiSecret == null)
 
 builder.Services.AddSingleton(new RoomServiceClient(host, apiKey, apiSecret));
 
+builder.Services.AddHealthChecks();
 //Authentication service
 builder.Services.AddAuthentication(options => //code copy pasted from some task we had half a year ago
 {
@@ -111,12 +133,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
+app.UseRouting();
+
+app.UseCors("Any");
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapUserEndpoints();
 app.MapCallEndpoints();
 app.MapTeamsEndpoints();
+
+
+app.MapHealthChecks("/health");
 
 app.Run();
