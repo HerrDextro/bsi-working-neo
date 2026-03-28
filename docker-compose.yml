@@ -1,7 +1,7 @@
 services:
-  database:
+  mariadb-database:
     image: mariadb:latest # TODO replace with version number
-    container_name: database
+    container_name: mariadb-database
     restart: always
     environment:
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
@@ -22,15 +22,21 @@ services:
 
   backend:
     build:
-      context: ./Backend/CommBackend/CommBackend
-      dockerfile: Dockerfile
+      context: .  # Set context to the ROOT
+      dockerfile: Backend/CommBackend/CommBackend/Dockerfile
+    tty: true      # Keeps the output stream open
+    stdin_open: true 
     container_name: conn_api
     depends_on:
-      database:
+      mariadb-database:
         condition: service_healthy  # Only starts when DB is ready
     environment:
-      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
-      - ASPNETCORE_ENVIRONMENT=Development # maybe switch to prod?
+          - ASPNETCORE_URLS=http://+:8080
+          - ASPNETCORE_ENVIRONMENT=Development
+          - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+          - LiveKit__ApiKey=${LIVEKIT_API_KEY}
+          - LiveKit__ApiSecret=${LIVEKIT_API_SECRET}
+          - JwtConfig__Key=${JWT_SECRET}
     ports:
       - "${BACKEND_PORT}:8080"
     healthcheck:
@@ -44,7 +50,7 @@ services:
 
   topic-service:
     build: 
-      context: .
+      context: ./service
       dockerfile: Dockerfile
     container_name: conn_service
     depends_on: 
