@@ -12,7 +12,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // --- CONFIGURATION & SECRETS ---
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+var connectionString = builder.Configuration.GetConnectionString("DebugConnection")
     ?? throw new InvalidOperationException("Connection string 'DebugConnection' not found.");
 
 var jwtKey = builder.Configuration["JwtConfig:Key"]
