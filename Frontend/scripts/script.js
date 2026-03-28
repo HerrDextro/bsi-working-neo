@@ -1,235 +1,233 @@
-let room;
+const CONFIG = {
+    API_BASE: "http://10.72.10.208:32788",
+    LIVEKIT_URL: "wss://clustercalls-cmhrjljf.livekit.cloud"
+};
 
-let calls = [
-    { id: 1748875, topic: "Topic1", participants: 5, activity: 1 },
-    { id: 2478784, topic: "Topic2", participants: 10, activity: 1 },
-    { id: 38589348, topic: "Topic3", participants: 2, activity: 1 }
-];
+const State = {
+    room: null,
+    currentToken: localStorage.getItem('token') || null
+};
 
-let placedCircles = [];
-
-const createClusterBtn = document.getElementById("createCluster");
-const submitClusterName = document.getElementById("submitNameBtn");
-const callInfosBackBtn = document.querySelector(".backBtn");
-const joinCallBtn = document.querySelector(".joinCallBtn");
-const leaveRoomBtn = document.querySelector(".leaveBtn");
-const logInBtn = document.getElementById("logInBtn");
-const signInBtn = document.getElementById("signInBtn");
-
-function createCallList(list) {
-    const parent = document.getElementById("callArea");
-    if (!parent) return;
-    parent.innerHTML = "";
-    list.forEach(element => {
-        const div = document.createElement("div");
-        div.className = "element";
-        div.textContent = element.topic;
-        parent.appendChild(div);
-    });
-}
-
-function createAllCluster(list) {
-    const parent = document.getElementById("clusterArea");
-    if (!parent) return;
-    parent.innerHTML = "";
-    placedCircles = [];
-    list.forEach(element => {
-        createCluster(element, parent);
-    });
-}
-
-async function createCluster(element, parent) {
-    const template = document.getElementById("clusterTemplate");
-    if (!template) return;
-
-    const center = getCenterFromGuid(element, parent);
-    let circleRadius = element.participants * 5 + 20;
-
-    const clone = template.content.cloneNode(true);
-    const wrapper = clone.querySelector('.cluster-wrapper');
-    wrapper.setAttribute('data-id', element.id);
-    const circle = clone.querySelector('.cluster');
-    const title = clone.querySelector('.clusterTitle');
-
-    title.textContent = element.topic;
-    circle.textContent = element.participants;
-    circle.style.height = (circleRadius * 2) + "px";
-    circle.style.width = (circleRadius * 2) + "px";
-    circle.setAttribute('data-id', element.id);
-    circle.setAttribute('data-topic', element.topic);
-
-    wrapper.style.position = "absolute";
-    wrapper.style.left = `${center.x - circleRadius}px`;
-    wrapper.style.top = `${center.y - circleRadius}px`;
-
-    parent.appendChild(clone);
-
-    placedCircles.push({ x: center.x, y: center.y, r: circleRadius, id: element.id });
-    let clickedCircle;
-    let topic;
-
-    circle.addEventListener("click", (e) => {
-        clickedCircle = e.currentTarget;
-        const overlay = document.getElementById("callInfosOverlay");
-        if (overlay) {
-            overlay.style.display = "flex";
-            document.getElementById("callInfosTitle").textContent = clickedCircle.dataset.topic;
-            if (joinCallBtn) joinCallBtn.setAttribute('data-id', clickedCircle.dataset.id);
-            if (leaveRoomBtn) leaveRoomBtn.setAttribute('data-id', clickedCircle.dataset.id);
-        }
-        topic = clickedCircle.dataset.topic;
-    });
-
-    const userToken = localStorage.getItem('token');
-    const response = await fetch(`http://10.72.10.208:32774/rooms/create?name=${topic}`, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
-        }
-    });
-}
-
-async function joinRoom(roomToken) {
-    const livekitUrl = "wss://clustercalls-cmhrjljf.livekit.cloud";
-    if (!room) return;
-    try {
-        if (room.state === 'connected') await room.disconnect();
-        await room.connect(livekitUrl, roomToken);
-        await room.localParticipant.setCameraEnabled(true);
-        await room.localParticipant.setMicrophoneEnabled(true);
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-function getCenterFromGuid(element, parent) {
-    const pRect = parent.getBoundingClientRect();
-    const seed = hashStringToInt(element.id ? element.id.toString() : element.topic);
-    const margin = 80;
-    const x = (seed % (pRect.width - margin * 2)) + margin;
-    const y = ((seed >> 5) % (pRect.height - margin * 2)) + margin;
-    return { x, y };
-}
-
-function hashStringToInt(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return Math.abs(hash);
-}
-
-function updateParticipantCount(id, newCount) {
-    const parent = document.getElementById("clusterArea");
-    const wrapper = document.querySelector(`.cluster-wrapper[data-id="${id}"]`);
-    if (!wrapper || !parent) return;
-    const circle = wrapper.querySelector('.cluster');
-    const newRadius = newCount * 5 + 20;
-    const center = getCenterFromGuid({ id: id }, parent);
-    circle.textContent = newCount;
-    circle.style.width = `${newRadius * 2}px`;
-    circle.style.height = `${newRadius * 2}px`;
-    wrapper.style.left = `${center.x - newRadius}px`;
-    wrapper.style.top = `${center.y - newRadius}px`;
-}
-
-if (joinCallBtn) {
-    joinCallBtn.addEventListener("click", async (e) => {
-        const targetId = e.currentTarget.dataset.id;
-        const userToken = localStorage.getItem('token');
+const ApiService = {
+    async request(endpoint, options = {}) {
+        const url = `${CONFIG.API_BASE}${endpoint}`;
+        const headers = { 'Content-Type': 'application/json' };
         
-        try {
-            const roomsResponse = await fetch("http://10.72.10.208:32774/rooms", {
-                method: 'GET',
-                headers: { 'Authorization': userToken }
-            });
-
-            if (!roomsResponse.ok) throw new Error("Failed to fetch rooms list");
-            const allRooms = await roomsResponse.json();
-
-            const targetRoom = allRooms.find(r => r.id == targetId);
-            if (!targetRoom) throw new Error("Room not found");
-
-            const url = "http://10.72.10.208:32774/rooms/join";
-            
-            const joinResponse = await fetch(url, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': userToken
-                },
-                body: JSON.stringify({ 
-                    roomId: targetRoom.id.toString(), 
-                    roomName: targetRoom.topic 
-                })
-            });
-
-            if (!joinResponse.ok) {
-                const errorText = await joinResponse.text();
-                throw new Error(errorText || "Join failed");
-            }
-
-            const data = await joinResponse.json();
-
-            updateParticipantCount(targetRoom.id, targetRoom.participants + 1);
-            
-            if (data.token) {
-                await joinRoom(data.token);
-            }
-
-            const overlay = document.getElementById("callInfosOverlay");
-            if (overlay) overlay.style.display = "none";
-
-        } catch (error) {
-            console.error("Join error:", error.message);
+        if (State.currentToken) {
+            headers['Authorization'] = `Bearer ${State.currentToken}`;
         }
-    });
-}
 
-if (createClusterBtn) {
-    createClusterBtn.addEventListener("click", () => {
-        const overlay = document.querySelector(".overlay");
-        if (overlay) overlay.style.display = "flex";
-    });
-}
-
-if (logInBtn) {
-    logInBtn.addEventListener("click", async () => {
-        const username = document.getElementById("name")?.value;
-        const password = document.getElementById("password")?.value;
-        const url = "http://10.72.10.208:32774/auth/login";
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            if (!response.ok) throw new Error('Login failed');
-            const result = await response.json();
-            localStorage.setItem('token', result.token);
-            window.location.href = "index.html";
-        } catch (error) {
-            console.error(error.message);
+        console.log(`Requesting: ${url}`);
+        
+        const response = await fetch(url, { ...options, headers });
+        
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`API ${response.status}: ${errorBody || response.statusText}`);
         }
-    });
-}
+        
+        return response.json();
+    },
 
-if (callInfosBackBtn) {
-    callInfosBackBtn.addEventListener("click", () => {
-        const overlay = document.getElementById("callInfosOverlay");
-        if (overlay) overlay.style.display = "none";
-    });
-}
+    getRooms: () => ApiService.request('/rooms'),
+    getTeams: () => ApiService.request('/teams?activeOnly=true'),
+    joinRoom: (id, topic) => ApiService.request(`/rooms/join?roomId=${id.toString()}`, {
+        method: 'POST'
+    }),
+    login: (username, pwd) => ApiService.request('/auth/login', {method : 'POST', body : JSON.stringify({username : username, password : pwd})})
+};
 
-window.addEventListener('DOMContentLoaded', () => {
-    if (typeof LiveKitClient !== 'undefined') {
-        room = new LiveKitClient.Room({
-            adaptiveStream: true,
-            dynacast: true,
-            publishDefaults: { videoCodec: 'h264' }
-        });
+const CallManager = {
+    initLiveKit() {
+        if (typeof LiveKitClient !== 'undefined') {
+            State.room = new LiveKitClient.Room({
+                adaptiveStream: true,
+                dynacast: true
+            });
+        }
+    },
+
+    async joinLiveKit(id, topic) {
+        try {
+            const data = await ApiService.joinRoom(id, topic);
+            if (State.room.state === 'connected') await State.room.disconnect();
+            await State.room.connect(CONFIG.LIVEKIT_URL, data.token);
+
+            await State.room.localParticipant.setCameraEnabled(true);
+            await State.room.localParticipant.setMicrophoneEnabled(true);
+        } catch (err) {
+            console.error("Failed to join LiveKit:", err);
+            alert("Join failed: " + err.message);
+        }
     }
-    createCallList(calls);
-    createAllCluster(calls);
+};
+
+const UIManager = {
+    renderClusters(items) {
+        const parent = document.getElementById("clusterArea");
+        if (!parent) return;
+        parent.innerHTML = "";
+
+        items.forEach(item => {
+            const template = document.getElementById("clusterTemplate");
+            if (!template) return;
+
+            const isTeams = !!item.teamsMeetingUrl;
+            const topic = item.topic || item.name;
+            const id = item.id;
+            const participants = item.participants || 0;
+            
+            const radius = participants * 5 + 30;
+            const pRect = parent.getBoundingClientRect();
+            const seed = this.hashString(id ? id.toString() : topic);
+            const x = (seed % (pRect.width - 150)) + 75;
+            const y = ((seed >> 5) % (pRect.height - 150)) + 75;
+
+            const clone = template.content.cloneNode(true);
+            const wrapper = clone.querySelector('.cluster-wrapper');
+            const circle = clone.querySelector('.cluster');
+            const title = clone.querySelector('.clusterTitle');
+
+            title.textContent = topic;
+            circle.textContent = participants;
+            circle.style.width = circle.style.height = `${radius * 2}px`;
+            
+            if (isTeams) circle.style.border = "3px solid #464EB8";
+
+            wrapper.style.position = "absolute";
+            wrapper.style.left = `${x - radius}px`;
+            wrapper.style.top = `${y - radius}px`;
+
+            circle.onclick = () => {
+                const overlay = document.getElementById("callInfosOverlay");
+                if (!overlay) return;
+                overlay.style.display = "flex";
+                document.getElementById("callInfosTitle").textContent = topic;
+                
+                const joinBtn = document.querySelector(".joinCallBtn");
+                joinBtn.onclick = () => {
+                    overlay.style.display = "none";
+                    if (isTeams) {
+                        window.open(item.teamsMeetingUrl, '_blank');
+                    } else {
+                        CallManager.joinLiveKit(id, topic);
+                    }
+                };
+            };
+
+            parent.appendChild(clone);
+        });
+    },
+
+    hashString(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        return Math.abs(hash);
+    }
+};
+
+async function initApp() {
+    CallManager.initLiveKit();
+
+    let allCalls = [];
+
+    try {
+        const rooms = await ApiService.getRooms();
+        allCalls = [...allCalls, ...rooms];
+    } catch (e) {
+        console.warn("Could not load Rooms API", e);
+    }
+
+    try {
+        const teams = await ApiService.getTeams();
+        allCalls = [...allCalls, ...teams];
+    } catch (e) {
+        console.warn("Could not load Teams API", e);
+    }
+
+    if (allCalls.length > 0) {
+        UIManager.renderClusters(allCalls);
+    } else {
+        console.error("Zero data received from API.");
+    }
+}
+
+document.querySelector(".backBtn")?.addEventListener("click", () => {
+    document.getElementById("callInfosOverlay").style.display = "none";
+});
+
+window.addEventListener('DOMContentLoaded', initApp);
+
+
+
+
+
+async function initApp() {
+    const token = localStorage.getItem('token');
+    const loginOverlay = document.getElementById("loginOverlay"); 
+    const mainContent = document.getElementById("clusterArea");
+
+    if (!token) {
+        console.log("No token found. Showing login.");
+        if (loginOverlay) loginOverlay.style.display = "flex";
+        return; 
+    }
+
+    if (loginOverlay) loginOverlay.style.display = "none";
+    CallManager.initLiveKit();
+
+    try {
+        console.log("Token found. Fetching data...");
+        const [rooms, teams] = await Promise.all([
+            ApiService.getRooms().catch(() => []),
+            ApiService.getTeams().catch(() => [])
+        ]);
+        
+        const combined = [...rooms, ...teams];
+        if (combined.length > 0) {
+            UIManager.renderClusters(combined);
+        } else {
+            console.warn("Connected, but no rooms found on server.");
+
+        }
+    } catch (e) {
+        console.error("Fetch error:", e);
+        if (e.message.includes("401") || e.message.includes("Unauthorized")) {
+            localStorage.removeItem('token');
+            window.location.reload();
+        }
+    }
+}
+
+
+document.getElementById("logInBtn")?.addEventListener("click", async (e) => {
+    e.preventDefault(); // Prevents form from doing its own weird thing
+    
+    const user = document.getElementById("name")?.value;
+    const pass = document.getElementById("password")?.value;
+
+    if (!user || !pass) {
+        alert("Enter your credentials, chief.");
+        return;
+    }
+
+    try {
+        console.log("Attempting login...");
+        const res = await ApiService.login(user, pass);
+
+        if (res && res.token) {
+            // 1. Save the token
+            localStorage.setItem('token', res.token);
+            console.log("Token saved. Redirecting...");
+
+            // 2. Redirect to index
+            window.location.href = "index.html";
+        } else {
+            alert("Login failed: Server didn't send a token.");
+        }
+    } catch (err) {
+        console.error("Login Error:", err);
+        // This is likely where your 10.72.10.208 timeout is hitting
+        alert("Connection failed. Is the server actually reachable at " + CONFIG.API_BASE + "?");
+    }
 });
