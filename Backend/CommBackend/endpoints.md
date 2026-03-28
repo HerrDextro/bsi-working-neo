@@ -51,7 +51,7 @@
 }
 ```
 
-#### GET /teams *?active_only=true/false*
+#### GET /teams *?active_only=true/false*?
 *gets all teams*
 
 #### GET /teams/{id}
