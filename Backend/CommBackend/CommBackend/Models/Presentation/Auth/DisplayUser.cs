@@ -1,4 +1,5 @@
 ﻿using CommBackend.Models.Data;
+using CommBackend.Models.Presentation.Room;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CommBackend.Models.Presentation.Auth
@@ -11,8 +12,8 @@ namespace CommBackend.Models.Presentation.Auth
         public required string Email { get; set; }
         public int Role { get; set; }
 
-        public RoomCall? RoomCall { get; set; }
-        public TeamsCall? TeamsCall { get; set; }
+        public string? RoomCallId { get; set; }
+        public string? TeamsCallId { get; set; }
 
         [SetsRequiredMembers]
         public DisplayUser(User user)
@@ -22,8 +23,9 @@ namespace CommBackend.Models.Presentation.Auth
             Description = user.Description;
             Email = user.Email;
             Role = user.Role;
-            RoomCall = user.RoomCall;
-            TeamsCall = user.TeamsCall;
+
+            RoomCallId = user.RoomId;
+            TeamsCallId = user.TeamsId;
         }
     }
 }

@@ -124,4 +124,3 @@ C:\Users\alex\OneDrive\Downloads\bsi-working-neo\Backend\CommBackend\CommBackend
 C:\Users\alex\OneDrive\Downloads\bsi-working-neo\Backend\CommBackend\CommBackend\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\alex\OneDrive\Downloads\bsi-working-neo\Backend\CommBackend\CommBackend\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.dll
 C:\Users\alex\OneDrive\Downloads\bsi-working-neo\Backend\CommBackend\CommBackend\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
-C:\Users\alex\OneDrive\Downloads\bsi-working-neo\Backend\CommBackend\CommBackend\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

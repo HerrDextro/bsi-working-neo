@@ -10,6 +10,7 @@ namespace CommBackend.Models.Presentation.Room
         public required string Id { get; set; }
         public required string Name { get; set; }
         public int MemberCount { get; set; }
+        public uint ActiveMemberCount { get; set; }
         public uint MaxParticipants { get; set; }
 
         public List<DisplayUser> Members { get; set; } = new List<DisplayUser>();
@@ -20,8 +21,8 @@ namespace CommBackend.Models.Presentation.Room
             Id = roomDb.Id;
             Name = roomDb.Name;
 
-            if (roomDb.MemberCount != roomCall.NumParticipants) { throw new Exception("Missmatch between call and db data"); }
             MemberCount = roomDb.MemberCount;
+            ActiveMemberCount = roomCall.NumParticipants;
 
             MaxParticipants = roomCall.MaxParticipants;
             Members = new();
