@@ -201,7 +201,7 @@ async function initApp() {
 
 
 document.getElementById("logInBtn")?.addEventListener("click", async (e) => {
-    e.preventDefault(); // Prevents form from doing its own weird thing
+    e.preventDefault();
     
     const user = document.getElementById("name")?.value;
     const pass = document.getElementById("password")?.value;
@@ -216,18 +216,18 @@ document.getElementById("logInBtn")?.addEventListener("click", async (e) => {
         const res = await ApiService.login(user, pass);
 
         if (res && res.token) {
-            // 1. Save the token
+
             localStorage.setItem('token', res.token);
             console.log("Token saved. Redirecting...");
 
-            // 2. Redirect to index
+
             window.location.href = "index.html";
         } else {
             alert("Login failed: Server didn't send a token.");
         }
     } catch (err) {
         console.error("Login Error:", err);
-        // This is likely where your 10.72.10.208 timeout is hitting
+
         alert("Connection failed. Is the server actually reachable at " + CONFIG.API_BASE + "?");
     }
 });
