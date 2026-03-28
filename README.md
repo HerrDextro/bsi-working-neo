@@ -14,6 +14,11 @@ Sind die Themen klar, kommen die Teilnehmer gut vorbereitet, beteiligen sich akt
 
 ## Was ist innovativ
 
+Dass man über die Themen und Teilnehmerzahl schon vor dem Beitretten Bescheid weiss.
+
+Laut Studien: https://eng.umd.edu/news/story/lsquoprimingrsquo-helps-the-brain-understand-language-even-with-poorquality-speech-signals 
+              https://pmc.ncbi.nlm.nih.gov/articles/PMC6877468/ 
+
 Nur 11 % der Meetings gelten als wirklich produktiv.
 
 Über 70 % der Meetings werden als unproduktiv angesehen.
