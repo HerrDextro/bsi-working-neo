@@ -1,30 +1,32 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
+# Stage 1: Base runtime and dependencies
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
+# Install curl as root before switching users
+USER root
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-
-# This stage is used to build the service project
+# Stage 2: Build
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["CommBackend/CommBackend.csproj", "CommBackend/"]
-RUN dotnet restore "./CommBackend/CommBackend.csproj"
+COPY ["Backend/CommBackend/CommBackend/CommBackend.csproj", "Backend/CommBackend/CommBackend/"]
+RUN dotnet restore "Backend/CommBackend/CommBackend/CommBackend.csproj"
 COPY . .
-WORKDIR "/src/CommBackend"
-RUN dotnet build "./CommBackend.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/Backend/CommBackend/CommBackend"
+RUN dotnet build "CommBackend.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# This stage is used to publish the service project to be copied to the final stage
+# Stage 3: Publish
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./CommBackend.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "CommBackend.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
+# Stage 4: Final Image
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Switch to the non-root user for security after setup is done
+USER $APP_UID
 ENTRYPOINT ["dotnet", "CommBackend.dll"]
+# -- MAKE SURE THERE IS NOTHING BELOW THIS LINE --
