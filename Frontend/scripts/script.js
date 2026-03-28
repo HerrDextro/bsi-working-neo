@@ -24,6 +24,7 @@ const createClusterBtn = document.getElementById("createCluster");
 const submitClusterName = document.getElementById("submitNameBtn");
 const callInfosBackBtn = document.querySelector(".backBtn");
 const joinCallBtn = document.querySelector(".joinCallBtn");
+const leaveRoomBtn = document.querySelector(".leaveBtn");
 
 function createCallList(list){
     const parent = document.getElementById("callArea");
@@ -77,7 +78,7 @@ submitClusterName.addEventListener("click", () => {
         participants: 1,
         activity: 1
     }
-
+    calls.push(element);
     createCluster(element, parent);
 
     const overlay = document.querySelector(".overlay");
@@ -128,6 +129,7 @@ const template = document.getElementById("clusterTemplate");
 
         document.getElementById("callInfosTitle").textContent = clickedCircle.dataset.topic;
         joinCallBtn.setAttribute('data-id', clickedCircle.dataset.id);
+        leaveRoomBtn.setAttribute('data-id', clickedCircle.dataset.id);
     })
 
 }
@@ -165,6 +167,24 @@ function hashStringToInt(str) {
     return Math.abs(hash);
 }
 
+
+leaveRoomBtn.addEventListener("click", (e) => {
+    const id = Number(e.currentTarget.dataset.id);
+
+    const call = calls.find(element => element.id === id);
+
+    if(call) {
+        call.participants -= 1;
+        if(call.participants === 0){
+            //deleteRoom(id);
+        }
+        updateParticipantCount(id, call.participants);
+    }
+
+    const overlay = document.getElementById("callInfosOverlay");
+    overlay.style.display = "none";
+})
+
 callInfosBackBtn.addEventListener("click", () => {
     const overlay = document.getElementById("callInfosOverlay");
     overlay.style.display = "none";
@@ -183,3 +203,160 @@ joinCallBtn.addEventListener("click", (e) => {
     const overlay = document.getElementById("callInfosOverlay");
     overlay.style.display = "none";
 })
+
+
+//Login
+const logInBtn = document.getElementById("logInBtn");
+const signInBtn = document.getElementById("signInBtn");
+
+logInBtn.addEventListener("click", async () => {
+    const username = document.getElementById("name").value;
+    const password = document.getElementById("password").value;
+    const url = "url /auth/login"
+
+    data = {
+        username: username,
+        password: password
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Registration failed');
+        }
+
+        const result = await response.json();
+        console.log('Success:', result);
+        return result;
+
+    } catch (error) {
+        console.error('Error during registration:', error.message);
+    }
+})
+
+signInBtn.addEventListener("click", async () => {
+    const username = document.getElementById("name").value;
+    const password = document.getElementById("password").value;
+    const url = "url /auth/register"
+
+    data = {
+        username: username,
+        password: password
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Registration failed');
+        }
+
+        const result = await response.json();
+        console.log('Success:', result);
+        return result;
+
+    } catch (error) {
+        console.error('Error during registration:', error.message);
+    }
+})
+
+
+
+
+//Calls
+async function createRoom(id){
+    const url = "/rooms/create";
+    const token = "JWT";
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(id)
+        });
+    } catch (error) {
+        console.error("Error during creating a room:", error.message);
+    }
+}
+
+async function joinRoom(id){
+    const url = "/rooms/join";
+    const token = "JWT";
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(id)
+        });
+    } catch (error) {
+        console.error("Error during joining a room:", error.message);
+    }
+}
+
+async function deleteRoom(id){
+
+    const index = calls.findIndex(c => c.id === id);
+    if (index !== -1) calls.splice(index, 1);
+
+    const wrapper = document.querySelector(`.cluster-wrapper[data-id="${id}"]`);
+    if (wrapper) {
+        wrapper.remove();
+    }
+
+
+    const url = "/rooms/{name}";
+    const token = "JWT";
+
+    try {
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(id)
+        });
+    } catch (error) {
+        console.error("Error during deleting a room:", error.message);
+    }
+}
+
+
+
+async function refreshToken(){
+    const url = "/auth/refresh";
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(id)
+        });
+    } catch (error) {
+        console.error("Error during refreshing the token", error.message);
+    }
+}
