@@ -17,7 +17,7 @@ namespace service.Services
         public TopicExtractorService(HttpClient httpClient, IConfiguration config)
         {
             _groqApiKey = config["GroqConfig:GROQ_API_KEY"]
-              ?? config["GROQ_API_KEY"] // This checks the Environment Variable too!
+              ?? config["GROQ_API_KEY"] 
               ?? throw new Exception("Missing Groq Key!");
             _httpClient = httpClient;
         }
@@ -47,7 +47,7 @@ namespace service.Services
                         content = $"PREVIOUS TOPIC: {lastTopic}\n\nNEW TRANSCRIPT CHUNK: {transcriptChunk}"
                     }
                 },
-                temperature = 0.3 // Lower temperature makes it less 'creative' and more consistent
+                temperature = 0.3 //keep low for accuracy
             };
 
             try
@@ -57,7 +57,7 @@ namespace service.Services
                 var response = await _httpClient.PostAsJsonAsync(_groqUrl, requestBody);
                 response.EnsureSuccessStatusCode();
 
-                // Digging into the OpenAI-style response to get the text
+                //openAI style response: see docs: https://platform.openai.com/docs/api-reference/chat/create#chat/create-response-format
                 var json = await response.Content.ReadFromJsonAsync<JsonElement>();
 
                 var rawContent = json.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString()?.Trim() ?? "";
@@ -65,7 +65,6 @@ namespace service.Services
                 bool isBranch = rawContent.Contains("[BRANCH]", StringComparison.OrdinalIgnoreCase);
                 string cleanTopic = rawContent.Replace("[BRANCH]", "", StringComparison.OrdinalIgnoreCase).Trim();
 
-                // Only update memory if we actually got a topic
                 if (!string.IsNullOrWhiteSpace(cleanTopic))
                 {
                     _roomTopics[roomId] = cleanTopic;
@@ -75,7 +74,7 @@ namespace service.Services
                 {
                     Topic = cleanTopic,
                     IsBranch = isBranch,
-                    RawResponse = rawContent // Pass this back to your endpoint
+                    RawResponse = rawContent
                 };
             }
             catch (Exception ex)
